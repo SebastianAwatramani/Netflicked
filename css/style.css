@@ -1,0 +1,76 @@
+body {
+	margin: 0px;
+	background-color: #999;
+}
+#wrapper {width: 980px; margin: 0 auto;}
+.posterDiv {
+	width: 200px; 
+	padding-left: 20px;
+	padding-right: 20px;
+	margin-bottom: 20px;
+	display: inline-block; 
+	height: 300px;
+}
+.posterImg {
+	width: 180px;
+	margin: 0 auto; 
+	height: 266px;
+	display: block;
+}
+.pTitle {
+	font-size: small;
+	margin: 0 auto;
+	width: 180px;
+
+	}
+#header {
+	height: 25px;
+	background-color: crimson;
+	width: 100%;
+	border-bottom: 2px solid black;
+	position: fixed;
+	top: 0px;
+}
+.textbox {
+	border-width: thin;
+	border-color: black;
+	border-style: solid;
+	vertical-align: middle;
+}
+.posterBig {
+	width: 400px;
+	float: left;
+}
+
+#footer {
+	margin: 0 auto;
+	width: 100%; 
+	text-align: center;
+	font-size: small;
+}
+
+.listWrapper, #searchWrapper {
+	clear: both;
+	padding-top: 15px;
+	margin: 0 auto;
+	width: 980px;
+	display: block;
+}
+
+#infoWrapper {
+	border: 2px solid black;
+	height: 700px;
+	background-color: orange;
+	margin: 0 auto;
+	width: 976px;
+	position: relative;
+}
+
+.movieLink {
+
+}
+
+#logout {
+	float:right;
+	position: relative;
+}
