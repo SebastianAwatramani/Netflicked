@@ -1,45 +1,16 @@
+/*Main section/page styles*/
+
+a, a:hover, a:visited {
+	color: black;
+	text-decoration: none;
+}
+
 body {
 	margin: 0px;
+	padding: 0px;
 	background-color: #999;
-}
-#wrapper {width: 980px; margin: 0 auto;}
-.posterDiv {
-	width: 200px; 
-	padding-left: 20px;
-	padding-right: 20px;
-	margin-bottom: 20px;
-	display: inline-block; 
-	height: 300px;
-}
-.posterImg {
-	width: 180px;
-	margin: 0 auto; 
-	height: 266px;
-	display: block;
-}
-.pTitle {
-	font-size: small;
-	margin: 0 auto;
-	width: 180px;
-
-	}
-#header {
-	height: 25px;
-	background-color: crimson;
-	width: 100%;
-	border-bottom: 2px solid black;
-	position: fixed;
-	top: 0px;
-}
-.textbox {
-	border-width: thin;
-	border-color: black;
-	border-style: solid;
-	vertical-align: middle;
-}
-.posterBig {
-	width: 400px;
-	float: left;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 12px;
 }
 
 #footer {
@@ -49,6 +20,94 @@ body {
 	font-size: small;
 }
 
+h1 {
+	font-variant: small-caps;
+	color: white;
+	margin: 5px 0px;
+	border-radius: 20px;
+	text-align: left;
+}
+
+#header {
+	height: 25px;
+	background-color: crimson;
+	width: 100%;
+	border-bottom: 2px solid black;
+	position: relative;
+	top: 0px;
+	line-height: 21px;
+}
+.headerLink {
+	display: inline;
+	margin: 0;
+	float: right;
+	color: white;
+	text-decoration: none;
+	position: relative;
+	background: #2083A9;
+	height: 21px;
+	vertical-align: middle;
+	padding: 2px 10px;
+	border-right: 1px solid black;
+}
+
+
+#wrapper {
+	width: 100%; 
+	margin: 0 auto;
+	position: relative;
+
+}
+
+/*Poster styles*/
+.posterDiv {
+	width: 200px; 
+	padding-left: 20px;
+	padding-right: 20px;
+	margin-bottom: 40px;
+	display: inline-block; 
+	height: 300px;
+	vertical-align: top;
+}
+.posterImg {
+	width: 180px;
+	margin: 0 auto; 
+	height: 266px;
+	display: block;
+}
+.pTitle {
+	font-size: 14px;
+	margin: 0 auto;
+	width: 180px;
+
+	}
+
+
+.posterBig {
+	width: 25%;
+	float: left;
+	margin-right: 15px;
+}
+
+
+/*Search/library styles*/
+#infoWrapper {
+	background-color: rgba(0,0,0,.6);
+	margin: 0 auto;
+	width: 70%;
+	position: relative;
+	padding: 0px 15%;
+	overflow: auto;
+	padding-bottom: 25px;
+}
+
+#infoWrapper p {
+	margin-top: 0px;
+	color: white;
+	display: inline-block;
+	float: left;
+	width: 60%;
+}
 .listWrapper, #searchWrapper {
 	clear: both;
 	padding-top: 15px;
@@ -57,20 +116,44 @@ body {
 	display: block;
 }
 
-#infoWrapper {
-	border: 2px solid black;
-	height: 700px;
-	background-color: orange;
+.ratingContainer {	
+	margin-bottom: 10px;
+}
+.ratingContainer img {
+	text-align: left;
+	vertical-align: ;
+}
+
+
+/*Form styles*/
+.accountForm {
 	margin: 0 auto;
-	width: 976px;
-	position: relative;
+	width: 300px;
+	margin-top: 10%;
 }
 
-.movieLink {
-
+.createLink,.createLink a {
+	text-align: center;
+	color: white;
+}
+.createLink a {
+	text-decoration: underline;
+}
+input {
+	box-sizing: border-box;
+	height: 25px;
 }
 
-#logout {
-	float:right;
-	position: relative;
+.textbox {
+	border-width: thin;
+	border-color: black;
+	border-style: solid;
+	vertical-align: middle;
 }
+
+
+#searchForm {
+	float: left;
+}
+
+
