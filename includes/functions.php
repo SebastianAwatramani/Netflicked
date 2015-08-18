@@ -1,8 +1,14 @@
 
 <?php 
-function addMovieToDB($DBConnect, $movieInfo)
-{
-    $poster_path = getAndSavePoster($DBConnect, $movieInfo);
+function addMovieToDB($DBConnect, $movieInfo) //Adds movie to main db and user's personal catalogue
+{   
+    if(isset($movieInfo["poster_path"])) {
+        getAndSavePoster($DBConnect, $movieInfo);
+        $poster_path = mysqli_real_escape_string($DBConnect, $movieInfo["poster_path"]); 
+    } else {
+        $poster_path = "/blank.jpg"; //If TMDB didn't return a poster
+    }
+    //Sanatize DB inputs
     $movieID = mysqli_real_escape_string($DBConnect, $movieInfo["movieID"]);
     $title = mysqli_real_escape_string($DBConnect, $movieInfo["title"]);
     $overview = mysqli_real_escape_string($DBConnect, $movieInfo["overview"]);
@@ -19,19 +25,26 @@ function addMovieToDB($DBConnect, $movieInfo)
                             ('$movieID', '$title', '$overview', '$tagline', '$vote_average', '$poster_path')";
             $QueryResult = mysqli_query($DBConnect, $SQLstring);
             if ($QueryResult === FALSE) {
-                echo "<p>Unable to execute the query.</p>" . "<p>Error code " . mysqli_errno($DBConnect) . ": " . mysqli_error($DBConnect) . "</p>";
+                echo "There was an error processing your request.  Please try again later\n";
             }
         }
-        $resultSet = mysqli_query($DBConnect, "SELECT movieID FROM movies WHERE movieID = '$movieID'");
+        $resultSet = mysqli_query($DBConnect, "SELECT movieID FROM movies WHERE movieID = '$movieID'"); //Checks that movie was succesfully stored, and if so, adds to user's catalogue
         $row = mysqli_fetch_assoc($resultSet);
         if (!empty($row['movieID'])) {
             $tableName = "linkingtable";
             $userID = $_SESSION["userID"];
-            $SQLstring = "INSERT INTO $tableName (userID, movieID) VALUES ('$userID', '$movieID')";
-            $QueryResult = mysqli_query($DBConnect, $SQLstring);
-            if ($QueryResult === FALSE) {
-                echo "<p>Unable to execute the query.</p>" . "<p>Error code " . mysqli_errno($DBConnect) . ": " . mysqli_error($DBConnect) . "</p>";
+            $SQLstring = "SELECT * FROM $tableName WHERE userID = $userID AND movieID = $movieID";
+            $resultSet = mysqli_query($DBConnect, $SQLstring);
+            if(mysqli_num_rows($resultSet) === 0) {
+                $SQLstring = "INSERT INTO $tableName (userID, movieID) VALUES ('$userID', '$movieID')";
+                $QueryResult = mysqli_query($DBConnect, $SQLstring);
+                if ($QueryResult === FALSE) {
+                    echo "There was an error processing your request.  Please try again later\n";
+                }
+            } else {
+                echo "<p>The movie you're trying to add is already in your collection</p>";
             }
+           
         }
     }
 }
@@ -50,30 +63,25 @@ function createAccount($DBConnect, $userName, $password)
                 echo "Account " . $userName . " successfully created.  Please <a href=\"index.php?login\">Login</a>";
             }
         } else {
+            printCreateAccountForm();
             echo "Username is not available.  Please try again\n";
             //Call function to print form
         }
     } else {
         echo "There was an error processing your request.  Please try again later\n";
-        echo "<p>Error code " . mysqli_errno($DBConnect) . ": " . mysqli_error($DBConnect) . "</p>";
     }
 }
 
-function getAndSavePoster($DBConnect, $movieInfo)
-{
-    if(isset($movieInfo["poster_path"])) {
-        $poster_path = mysqli_real_escape_string($DBConnect, $movieInfo["poster_path"]); 
-        file_put_contents("images/{$movieInfo["poster_path"]}", file_get_contents("http://image.tmdb.org/t/p/w396/" . $movieInfo["poster_path"])); //Save image locally
-    } else {
-        $poster_path = "blank.jpg"; //If there were no images, we assign a default image for the database
-    }
-
-    return $poster_path;
+function getAndSavePoster($DBConnect, $movieInfo) //Store image locally
+{   
+        $localPath = "images" . $movieInfo['poster_path'];
+        if(!file_exists($localPath)) {            
+            file_put_contents("images/{$movieInfo["poster_path"]}", file_get_contents("http://image.tmdb.org/t/p/w396" . $movieInfo["poster_path"])); //Save image locally
+        }   
 }
 
-function getMovieInfo($DBConnect, $movieID)
+function getMovieInfo($DBConnect, $movieID) //Check local DB for movie, and if !exist cURL it
 {
-
     if ($resultSet = mysqli_query($DBConnect, "SELECT * FROM movies WHERE movieID = '$movieID'")) {
         if (mysqli_num_rows($resultSet) !== 0) {
             $movieInfo = mysqli_fetch_assoc($resultSet);
@@ -100,24 +108,16 @@ function getMovieInfo($DBConnect, $movieID)
 
             $movieInfo = json_decode($curlData, true);
             $movieInfo['movieID'] = $movieInfo['id'];
-            unset($movieInfo['id']);
             $movieInfo['isLocal'] = false;
             return $movieInfo;
         }
     }
 }
 
-function pre($output) 
-{
-    echo "<pre>";
-    print_r($output);
-    echo "</pre>";
 
-}
-
-function login($DBConnect)
+function login($DBConnect) //Login function
 {
-$userName = mysqli_real_escape_string($DBConnect, $_POST["userName"]);
+    $userName = mysqli_real_escape_string($DBConnect, $_POST["userName"]);
     $password = hash('md5', $_POST["password"]);
     $tableName = "users";
     $SQLquery = "SELECT * FROM users WHERE userName = '$userName'";
@@ -130,34 +130,48 @@ $userName = mysqli_real_escape_string($DBConnect, $_POST["userName"]);
             $_SESSION["userName"] = $row["userName"];
             $_SESSION["userID"] = $row["userID"];
         } else {
-            echo "The username and password combination you entered is incorrect";
+            return false; //Will print a bad credentials error if this function returns false.
         }
     }
 }
 
-function printItemsInDB($DBConnect)
+function printItemsInDB($DBConnect) //Print user's catalogue
 {
     $userID = $_SESSION["userID"];
     $SQLstring = "SELECT m.title, m.movieID, m.poster_path FROM movies m, linkingtable l WHERE m.movieID = l.movieID AND l.userID = '$userID' ORDER BY title ASC";
     echo "<div class=\"listWrapper\">";
     if ($resultSet = mysqli_query($DBConnect, $SQLstring)) {
+        if(mysqli_num_rows($resultSet) === 0 ) {
+            echo "<p>Search for a movie to add to your collection</p>";
+        } else {
+            echo "<h2>My Movies</h2>";
         while ($row = mysqli_fetch_assoc($resultSet)) {
-            echo "<div class=\"posterDiv\"><a class = \"movieLink\" href=\"index.php?movieID={$row['movieID']}\"><img class=\"posterImg\" src=\"images/{$row['poster_path']}\">\n
+            echo "<div class=\"posterDiv\"><a class = \"movieLink\" href=\"index.php?movieID={$row['movieID']}\"><img class=\"posterImg\" src=\"images{$row['poster_path']}\">\n
                     <p class=\"pTitle\">{$row['title']}</p></a>
                     </div>\n";
         }
     }
+}
     echo "</div>";
 }
 
-function printMovieInfo($DBConnect, $movieInfo)
+function printMovieInfo($DBConnect, $movieInfo) //Function to print large movie poster and info
 {
     $isLocal = $movieInfo['isLocal'];
-    $poster_path = ($isLocal) ? "images{$movieInfo["poster_path"]}" :  "http://image.tmdb.org/t/p/w396/{$movieInfo["poster_path"]}";
-    echo "<h1>" . htmlentities($movieInfo["title"]) . " - Average Rating: " . "{$movieInfo["vote_average"]}</h1>";
+    $poster_path = ($isLocal) ? "images{$movieInfo["poster_path"]}" :  "http://image.tmdb.org/t/p/w396{$movieInfo["poster_path"]}";
+    echo "<h1>" . htmlentities($movieInfo["title"]) . "</h1>";
+    echo "<div class='ratingContainer'>";
+    for($i = 0; $i < $movieInfo["vote_average"]; $i++) {
+        echo "<img src='assets/star.png' class='star'>";
+    }
+    echo "</div>";
+
     echo "<img class=\"posterBig\" src=\"{$poster_path}\">";
     echo "<p>" . htmlentities($movieInfo["overview"]) . "</p>";
     /*   
+    
+    //Option to delete movie, not currently implemented
+
     if($isLocal) {
 
         //echo "<a class=\"deleteMovie\" href=\"index.php?movieID={$movieInfo['movieID']}&delete=1\">Delete?</a>";
@@ -170,7 +184,7 @@ function printMovieInfo($DBConnect, $movieInfo)
             
 
 */
-    $inUserLibrary = inUserLibrary($DBConnect, $movieInfo['movieID']);
+    $inUserLibrary = inUserLibrary($DBConnect, $movieInfo['movieID']); //Checks if in user's catalogue
     if ($inUserLibrary == false) {
 
         echo "  <form method=\"POST\" action=\"index.php\">
@@ -182,7 +196,7 @@ function printMovieInfo($DBConnect, $movieInfo)
 
 }
 
-function inUserLibrary($DBConnect, $movieID)
+function inUserLibrary($DBConnect, $movieID) //Checks if in user's catalogue
 {
     $tableName = "linkingtable";
     $userID = $_SESSION['userID'];
@@ -196,13 +210,17 @@ function inUserLibrary($DBConnect, $movieID)
     } return true;
 }
 
-function printSearchResults($searchResults)
+function printSearchResults($searchResults) //Prints search results
 {
     for($i = 0; $i < count($searchResults["results"]); $i++) {    
         echo "<div class=\"posterDiv\">
-                <a class = \"movieLink\" href=\"index.php?movieID={$searchResults["results"][$i]["id"]}\">
-                <img class=\"posterImg\" src=\"http://image.tmdb.org/t/p/w185/{$searchResults["results"][$i]["poster_path"]}\">\n
-                <p class=\"pTitle\">{$searchResults["results"][$i]["title"]}</p></a>
+                <a class = \"movieLink\" href=\"index.php?movieID={$searchResults["results"][$i]["id"]}\">";
+                if(!empty($searchResults["results"][$i]["poster_path"])) {
+                    echo  "<img class=\"posterImg\" src=\"http://image.tmdb.org/t/p/w185{$searchResults["results"][$i]["poster_path"]}\">\n";
+                } else {
+                    echo "<img class=\"posterImg\" src=\"assets/blank.jpg\">\n";
+                }
+                echo "<p class=\"pTitle\">{$searchResults["results"][$i]["title"]}</p></a>
                 <form method=\"POST\" action=\"index.php\">
                     <input type=\"hidden\" name=\"movieID\" value=\"{$searchResults["results"][$i]["id"]}\">
                     <input type=\"submit\" value=\"Add to my movies\" name=\"addFromSearch\" />
@@ -226,5 +244,15 @@ function searchTMDB($name)
     curl_close($curl);
 
     return json_decode($curlData, true); //Decode the retreived data
+}
+
+
+function printCreateAccountForm() { //Form to create account
+    echo "<form method=\"post\" action=\"index.php?createAccount=1\" class=\"accountForm\">
+                    <input type=\"text\" name=\"userName\" placeholder=\"Username\" />
+                    <input type=\"password\" name=\"password\" placeholder=\"Password\" />
+                    <input type=\"submit\" name=\"createAccount\" value=\"Create Account\" />
+                    </form>
+                    <p class=\"createLink\"><a href=\"index.php\">Log in</a></p>";
 }
 ?>
